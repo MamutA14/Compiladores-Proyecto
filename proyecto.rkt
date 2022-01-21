@@ -31,6 +31,7 @@ Alumnos:
          (define x e)
          (while [e0] e1)
          (for [x e0] e1)
+         (quot c)
          (begin e* ... e)
          (if e0 e1)
          (if e0 e1 e2)
@@ -67,7 +68,7 @@ Alumnos:
 
 
 
-;;---------------------------FRONT END-------------------------
+;;---------------------------FRONT-END-------------------------
 ;;remove-one-armed
 ;;Lenguaje sin if's de una rama
 (define-language L1
@@ -206,8 +207,6 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
     ["length" (eq? 1 actual)]
     ["car" (eq? 1 actual)]
     ["cdr" (eq? 1 actual)]))
-
-;;verify-arity
 ; Funcion que verifica si el numero de parametros corresponde con la aridad de las primitivas
 (define-pass verify-arity : L4(ir)-> L4()
   (Expr : Expr (ir) -> Expr ()
@@ -232,3 +231,62 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
          `(letrec ([,x ,t ,e]) ,body* ..., body)]
         [(lambda ([,x* ,t*] ...) ,[Expr : body* (append x* env) -> body*] ... , [Expr : body (append x* env) -> body])
          `(lambda ([,x* ,t*] ...) ,body* ... ,body)]))
+
+
+;;---------------------------MIDDLE-END-------------------------
+;;curry
+;;Lenguaje que se encargara de currificar las expresiones: lambdas, aplicaciones de función 
+(define-language L5
+  (extends L4)
+  (Expr (e body)
+        (-
+         (lambda ([x* t* ] ...) body* ... body)
+         (e0 e1 ...)
+         )
+        (+
+         (lambda ([x t ]) body* ... body)
+         (e0 e1))
+  )
+)
+(define-parser parse-L5 L5)
+(define-pass curry : L4(ir) -> L5()
+  (Expr : Expr(ir) -> Expr()
+        [(lambda ([,x*,t*]...),[body*] ... ,[body])
+         ;;Definimos f como el conjunto de valores de x* t* 
+         (let f ([paramsx* x*]
+                 [paramst* t*])
+           (if (equal? (length paramsx*) 1)
+               `(lambda ([,(car paramsx*),(car paramst*)]) ,body* ...,body)
+               `(lambda ([,(car paramsx*),(car paramst*)]),(f (cdr paramsx*) (cdr paramst*)))
+               ))]
+        [(,[e0],[e1]  ...)
+         (let f ([paramse0 e0]
+                 [paramse1 e1])
+           (if (equal? (length paramse1 ) 0) 
+               `,paramse0
+               (f `(, paramse0 ,(car paramse1)) (cdr paramse1))
+               ))]))
+
+
+;;type-const
+(define-language L6
+  (extends L5)
+  (Expr (e body)
+        (-
+         (quot c)
+         )
+        (+
+         (const t c)
+         )
+  )
+)
+(define-parser parse-L6 L6)
+(define-pass type-const : L5(ir) -> L6()
+  (Expr : Expr(ir) -> Expr()
+        [(quot , c) ;;(begin ,[e*] ... ,[e])
+         (cond
+           [(number? c) `(const , 'Int , c) ]
+           [(boolean? c) `(const , 'Bool , c) ]
+           [else `(const , 'Char , c) ])
+        ])
+   )
