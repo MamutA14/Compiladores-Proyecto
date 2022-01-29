@@ -109,7 +109,9 @@
 
 
 (define global-env-J '())
-
+(define (add-to-global-J x t )
+    (set! global-env-J (append (cons (list x t) '()) global-env-J))
+)
 (define (J e env)
     (nanopass-case (L6 Expr) e
         [,x  (find-type x (append env global-env-J))]         ;; para variables buscamos directamente en el ambiente
@@ -146,7 +148,10 @@
                 (error 'J "El tipo de ~a debe ser Bool. Y el tipo de ~a debe ser igual al de ~a " e0 e1 e2) )]
 
         ;; Para las lambdas el tipo es t -> type_of_body
-        [(lambda ([,x ,t]) ,body)  (list t '->  (J body (add-var-to-env x t env)))]
+        [(lambda ([,x ,t]) ,body)
+         (begin
+         (add-to-global-J x t)
+         (list t '->  (J body (add-var-to-env x t env))) )]
 
         ;; para expresiones let devolvemos el tipo del body agregando (x t) al ambiente
         [(let ([,x ,t ,e]) ,body)
@@ -191,20 +196,66 @@
         [(for [,x ,[e0]] ,e1)  (J e1 (add-var-to-env x (caddr e0) env)) ]
   ))
 
+(define (apply-J e)
+    (begin
+        (set! global-env-J '())
+        (J e ' ()) ) )
+
 
 (define-pass type-infer : L6(ir) -> L6()
     (Expr : Expr (ir) -> Expr ()
         ;; Para let solo inferimos el tipo de t cuando de entrada es List, lo denombra a List of
         [(let ([,x ,t ,[e]]) ,[body])
             (case t
-                [(List) `(let ([,x ,(J e '()) ,e]) ,body) ]
+                [(List) `(let ([,x ,(apply-J e ) ,e]) ,body) ]
                 [else   `(let ([,x ,t ,e]) ,body) ])]
         ;; Para letrec solo inferimos el tipo de t cuando de entrada es Lambda o List, los cambia de T->T y List of respectivamente.
         [(letrec ([,x ,t ,[e]]) ,[body])
-            (let ( [fixed-type (case t [(List Lambda) (J e '())] [else t]) ])
-                (begin  (displayln (~v t))
-                `(letrec ([,x ,fixed-type ,e]) ,body)
-            ))]
+            (let ( [fixed-type (case t [(List Lambda) (apply-J e )] [else t]) ])
+                `(letrec ([,x ,fixed-type ,e]) ,body) )]
         ;; Para letfun siempre inferimos el tipo de t, aplicando tanto para List como para Lambda
         [(letfun ([,x ,t ,[e]]) ,[body])
-            `(letfun ([,x ,(J e '()) ,e]) ,body)]  ))
+            `(letfun ([,x ,(apply-J e) ,e]) ,body)]  ))
+
+
+
+
+
+;;================== PASS 11 : uncurry ===============
+
+
+
+;;uncurry
+;;Lenguaje que descurrifica las funciones anonimas
+(define-language L7
+    (extends L6)
+    (Expr (e body)
+          (- (lambda ([x t ]) body* ... body))
+          (+ (lambda ([x* t*] ...) body))))
+
+(define-parser parse-L7 L7)
+
+
+;; Definimos un pass auxiliar para identificar lambdas
+(define-pass lambda? : (L6 Expr) (e) -> * (bool)
+    (Expr : Expr (e) -> * (bool)
+        [(lambda ([,x ,t]) ,body) #t]
+        [else #f])
+    (Expr e))
+
+;; Funcion auxiliar que devuelve el body de una expresion lambda
+(define (get-body-lambda expr)
+    (nanopass-case (L6 Expr) expr
+        [(lambda ([,x ,t]) ,body) (get-body-lambda body)]
+        [else expr]))
+
+;; Funcion auxiliar para obtener la lista de asignaciones que se hacen en una expression lambda dada
+(define (get-assigments-lambda expr acum)
+    (nanopass-case (L6 Expr) expr
+        [(lambda ([,x ,t]) ,body)  (append (list (list x t)) (get-assigments-lambda body acum)) ]
+        [else acum]))
+
+;; Pass that uncurryfies lambda expressions from L10.
+
+
+

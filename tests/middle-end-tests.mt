@@ -17,5 +17,6 @@
 (type-infer (type-const (curry (front-passes (parse-LF '(letrec ([f Lambda (lambda ([x Int])x )]) (f (quot 1)) ) )))))
 (type-infer (type-const (curry (front-passes (parse-LF '(let ([x List (list)]) x)) ))))
 (type-infer (type-const (curry (front-passes (parse-LF '(let ([x List (list (quot 1) (quot 2))]) x)) ))))
+ (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int] [y Int]) x) )))))
 
 
