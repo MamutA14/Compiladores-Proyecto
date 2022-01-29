@@ -3,7 +3,7 @@
 (require "frontend.rkt")
 (require "middle.rkt")
 (provide (all-defined-out))
-
+;;================== PASS 12 : assigment ===============
 (define (symbol-table-var-aux expr table)
     (nanopass-case (L7 Expr) expr
         [(let ([,x ,t ,[e] ]) ,body)
@@ -65,7 +65,7 @@
   (values (Expr ir) (symbol-table-var ir)))
 
 
-;; list-to-array
+;;================== PASS 13 : list-to-array ===============
 
 ; Funcion auxiliar que dada una lista toma el primer elemento y aplica sobre ese elemento el algoritmo J
 (define (J-aux x)
@@ -84,3 +84,24 @@
     [ (list ,[e*] ...)
         (let ([t (J-aux ir)])
         `(array ,(length e*)  ,t  [,e* ...] )) ] ))
+
+
+;==================== Función c ================================
+(define (c expr)
+  (nanopass-case
+   (L9 Expr) expr
+   [(const ,t ,c)
+    (match t
+           ['Int (number->string c)]
+           ['Bool (match c
+                  ['#t "1"]
+                  ['#f "0"])]
+           ['Char (string c)])]
+   [,t
+       (match t
+       ['Int  "int"]
+       ['Bool  "int"]
+       ['Char  "char"]
+       )]
+   [(primapp )]
+       ))
