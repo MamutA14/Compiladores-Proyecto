@@ -268,3 +268,9 @@
                     [next-body (get-body-lambda body)])
                `(lambda ([,x ,t] [,next-x ,next-t]) ,(uncurry next-body)))
              `(lambda ([,x ,t]) ,(uncurry body)))]))
+
+
+
+;; TODOS LOS PASSES JUNTOS
+(define (middle-passes exp)
+    (uncurry (type-infer (type-const (curry exp)))))

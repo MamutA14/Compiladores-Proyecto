@@ -26,3 +26,6 @@
 (uncurry (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int]) (primapp + x (quot 1)) ) ))))))
 > (uncurry (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int]) (primapp < x (quot 1)) ) ))))))
 
+;; todos los passes hasta el middle
+
+(middle-passes (front-passes (parse-LF '(lambda ([x Int]) (primapp < x (quot 1))))))
