@@ -23,3 +23,4 @@
 
 ;; ejemplo con los passes completos
 (front-passes (parse-LF '(for [x (1 2 3)] (primapp < 1 x))))
+ (front-passes (parse-LF '(for [x (1 2 3)] (begin (define y 4) (primapp + x y) ))))

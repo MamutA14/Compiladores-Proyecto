@@ -255,13 +255,24 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
              (error "Arity mismatch."))]))
 
 
+
+
+;; definimos un ambiente global para la declaracion de variables
+
+(define envG '())
+;; Funcion auxiliar que limpia el ambiente global antes de hacer la verificacion de variables
+(define (verify-vars-aux e)
+    (begin
+    (set! envG '())
+    (verify-vars e)))
+
 ;;verify-vars
 ;;Función que verificar que la expresión no tenga variables libres, de existir variables libres se regresa un error en otro caso devuelve
 ;;la expresión original
 (define-pass verify-vars : L4 (ir) -> L4 ()
   (Expr : Expr (ir [env null]) -> Expr ()
         [,x
-         (if (memq x env)
+         (if (or (memq x env) (memq x envG))
              x
              (error (string-append "Free variable " (symbol->string x))))]
         [(let ([,x ,t ,[e]]) ,[Expr : body* (cons x env) -> body*] ... ,[Expr : body (cons x env) -> body])
@@ -272,11 +283,15 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
          `(lambda ([,x* ,t*] ...) ,body* ... ,body)]
          ;; caso para el for
         [(for [,x ,e0*] ,[Expr : e1 (cons x env) -> e1]  )
-          `(for [,x ,e0*] ,e1)] ))
-
+          `(for [,x ,e0*] ,e1)]
+        [(define ,x ,[Expr : e (cons x env) -> e])
+            (begin
+            (set! envG (cons x envG))
+            `(define ,x  ,e))]
+        [(begin ,[e*] ,[e]) `(begin ,e* ,e) ]))
 
 
 ;; todos los procesos de front aplicados
 
 (define (front-passes exp)
-    (verify-vars (verify-arity (un-anonymous (identify-assigments ( curry-let (remove-string (remove-one-armed-if exp) )))))))
+    (verify-vars-aux (verify-arity (un-anonymous (identify-assigments ( curry-let (remove-string (remove-one-armed-if exp) )))))))
