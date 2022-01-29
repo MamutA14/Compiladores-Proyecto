@@ -256,20 +256,21 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
 
 
 
+;;================== PASS 7 : verift-vars ===============
 
 ;; definimos un ambiente global para la declaracion de variables
-
 (define envG '())
+
 ;; Funcion auxiliar que limpia el ambiente global antes de hacer la verificacion de variables
-(define (verify-vars-aux e)
+(define (verify-vars e)
     (begin
     (set! envG '())
-    (verify-vars e)))
+    (verify-vars-aux e)))
 
-;;verify-vars
+;;verify-vars-aux
 ;;Función que verificar que la expresión no tenga variables libres, de existir variables libres se regresa un error en otro caso devuelve
 ;;la expresión original
-(define-pass verify-vars : L4 (ir) -> L4 ()
+(define-pass verify-vars-aux : L4 (ir) -> L4 ()
   (Expr : Expr (ir [env null]) -> Expr ()
         [,x
          (if (or (memq x env) (memq x envG))
@@ -294,4 +295,4 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
 ;; todos los procesos de front aplicados
 
 (define (front-passes exp)
-    (verify-vars-aux (verify-arity (un-anonymous (identify-assigments ( curry-let (remove-string (remove-one-armed-if exp) )))))))
+    (verify-vars (verify-arity (un-anonymous (identify-assigments ( curry-let (remove-string (remove-one-armed-if exp) )))))))
