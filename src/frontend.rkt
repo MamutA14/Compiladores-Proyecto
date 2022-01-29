@@ -20,6 +20,7 @@
          l
          s
          t
+         (quot c)
          (primapp pr e* ...)
          (begin e* ... e)
          (if e0 e1)

@@ -38,3 +38,32 @@
                (f `(, paramse0 ,(car paramse1)) (cdr paramse1)) ))]) )
 
 
+
+
+
+
+;;================== PASS 9 : type-const ===============
+
+
+;; New language, remove quot constrcutor and add const
+(define-language L6
+  (extends L5)
+  (Expr (e body)
+        (-
+         (quot c)
+         )
+        (+
+         (const t c)
+         ) ) )
+
+
+(define-parser parse-L6 L6)
+(define-pass type-const : L5(ir) -> L6()
+  (Expr : Expr(ir) -> Expr()
+        [(quot , c) ;;(begin ,[e*] ... ,[e])
+         (cond
+           [(number? c) `(const , 'Int , c) ]
+           [(boolean? c) `(const , 'Bool , c) ]
+           [else `(const , 'Char , c) ])
+        ])
+   )
