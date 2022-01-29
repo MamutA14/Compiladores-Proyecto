@@ -209,6 +209,8 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
     ["+" #t]
     ["-" #t]
     ["/" #t]
+    ["or" #t]
+    ["and" #t]
     ;; operaciones aritmeticas nuevas
     ["<" (eq? 2 actual)]
     [">" (eq? 2 actual)]
@@ -219,6 +221,7 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
 
 
     ;; Los siguientes son operadores de tipo lista, es decir solo aceptan 1 parametros
+    ["not" (eq? 1 actual)]
     ["length" (eq? 1 actual)]
     ["car" (eq? 1 actual)]
     ["cdr" (eq? 1 actual)]

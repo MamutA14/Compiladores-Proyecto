@@ -102,6 +102,7 @@
 (define (check-args-types pr args )
     (case pr
         [(+ - * / < > equal? iszero? ++ --) (andmap (lambda (x) (equal? x 'Int)) args) ]  ;; Estas primitivas son sobre enteros
+        [(or and not) (andmap (lambda (x) (equal? x 'Bool)) args) ]  ;; Estas primitivas son sobre enteros
         [(append cons)  (let ([tipo_e (car args)])  (equal? tipo_e (car (cddadr args) )) )]
         [(concat) (let ([type (car args)])  (andmap (lambda (x) (equal? x type)) args) )]
         [(elem?) (ormap (lambda (x) (and (list? x) (equal? (car x) 'List))) args) ]  ;; Estas operaciones van sobre listas
@@ -134,7 +135,7 @@
             (if (check-args-types pr tipos)
                 (case pr
                     [(+ - * / ++ -- length) 'Int]
-                    [(< > equal? iszero? equal-lst? empty? elem?) 'Bool]
+                    [(< > equal? iszero? equal-lst? empty? elem? and or not) 'Bool]
                     [(concat) (car tipos)]
                     [(cons append) (cadr tipos)]
                     [(car) (caddr (car  (map (lambda (x) (J x env)) e*)))]

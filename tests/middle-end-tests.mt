@@ -29,3 +29,4 @@
 ;; todos los passes hasta el middle
 
 (middle-passes (front-passes (parse-LF '(lambda ([x Int]) (primapp < x (quot 1))))))
+(middle-passes (front-passes (parse-LF '(lambda ([x Int]) (primapp or (primapp < x x) (primapp < x x))))))
