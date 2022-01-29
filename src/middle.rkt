@@ -96,7 +96,7 @@
 ;; Funcion que dada una variable x, un tipo t y un ambiente env devuelve un nuevo ambiente
 ;; resultado de agregar la tupla (x,t) al ambiente
 (define (add-var-to-env x t env)
-    (list (list x t) env))
+    (append (cons (list x t) '()) env))
 
 ;; Funcion que verifica que dada una lista de tipos args, estos tipos sean los correctos para la operacion pr
 (define (check-args-types pr args )
@@ -214,8 +214,11 @@
             (let ( [fixed-type (case t [(List Lambda) (apply-J e )] [else t]) ])
                 `(letrec ([,x ,fixed-type ,e]) ,body) )]
         ;; Para letfun siempre inferimos el tipo de t, aplicando tanto para List como para Lambda
-        [(letfun ([,x ,t ,[e]]) ,[body])
-            `(letfun ([,x ,(apply-J e) ,e]) ,body)]  ))
+        [(letfun ([,x ,t ,e]) ,[body])
+            (let ( [fixed-type (case t [(List Lambda) (apply-J e )] [else t]) ])
+                `(letfun ([,x ,fixed-type ,e]) ,body) )] ))
+
+            ;; `(letfun ([,x ,(apply-J e) ,e]) ,body)]  ))
 
 
 
@@ -235,27 +238,33 @@
 
 (define-parser parse-L7 L7)
 
-
-;; Definimos un pass auxiliar para identificar lambdas
+;; Predicate for lambda expressions.
 (define-pass lambda? : (L6 Expr) (e) -> * (bool)
-    (Expr : Expr (e) -> * (bool)
-        [(lambda ([,x ,t]) ,body) #t]
-        [else #f])
-    (Expr e))
+  (Expr : Expr (e) -> * (bool)
+    [(lambda ([,x ,t]) ,body) #t]
+    [else #f])
+  (Expr e))
+
+
 
 ;; Funcion auxiliar que devuelve el body de una expresion lambda
 (define (get-body-lambda expr)
     (nanopass-case (L6 Expr) expr
-        [(lambda ([,x ,t]) ,body) (get-body-lambda body)]
+        [(lambda ([,x ,t]) ,body) body]
+        [else expr]))
+(define (get-asig-lambda expr)
+    (nanopass-case (L6 Expr) expr
+        [(lambda ([,x ,t]) ,body)  (list x t)]
         [else expr]))
 
-;; Funcion auxiliar para obtener la lista de asignaciones que se hacen en una expression lambda dada
-(define (get-assigments-lambda expr acum)
-    (nanopass-case (L6 Expr) expr
-        [(lambda ([,x ,t]) ,body)  (append (list (list x t)) (get-assigments-lambda body acum)) ]
-        [else acum]))
 
-;; Pass that uncurryfies lambda expressions from L10.
-
-
-
+(define-pass uncurry : L6 (ir) -> L7 ()
+  (Expr : Expr (e) -> Expr ()
+        [(lambda ([,x ,t]) ,body)
+         (if (lambda? body)
+             (let* ([assignments (get-asig-lambda body)]
+                    [next-x (car assignments)]
+                    [next-t (cadr assignments)]
+                    [next-body (get-body-lambda body)])
+               `(lambda ([,x ,t] [,next-x ,next-t]) ,(uncurry next-body)))
+             `(lambda ([,x ,t]) ,(uncurry body)))]))

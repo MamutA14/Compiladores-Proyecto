@@ -20,3 +20,9 @@
  (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int] [y Int]) x) )))))
 
 
+
+;; para el pass 11
+(uncurry (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int] [y Int]) (primapp + x y))))))))
+(uncurry (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int]) (primapp + x (quot 1)) ) ))))))
+> (uncurry (type-infer (type-const (curry (front-passes (parse-LF '(lambda ([x Int]) (primapp < x (quot 1)) ) ))))))
+
