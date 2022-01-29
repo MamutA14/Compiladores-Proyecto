@@ -107,12 +107,40 @@
        ['Bool  "int"]
        ['Char  "char"]
        )]
-   [(while [,e0] ,e1) "while (" (c e0) ")" "{" (c e1) "}"]
+   [(while [,e0] ,e1) "while (" (c e0) ")" "{\n" (c e1) "\n}"]
    [(for [,x ,e0] ,e1)
-     (let* ([size (car e0)]
-            [t (second e0)]
-            [e* (cdddr e0)])
-       (string-append "for(" (c t) " " (c x) "=0; i<" (number->string size) ";i++){" (c e1) "}"))]
+     (let* ([d (list-to-array (parse-L11 e0))]
+            [size (first d)]
+            [t (second d)]
+            [e* (third e0)])
+       (string-append "for(" (c t) " " (c x) "=0; i < " (number->string size) ";i++){\n" (c e1) "\n}"))]
+   [,x (symbol->string x)]
    [(primapp ,pr ,e* ...)
-    (match pr)]
-       ))
+    (match pr
+      ['+ (string-append (c (first e*)) "+" (c (second e*)))]
+      ['- (string-append (c (first e*)) "-" (c (second e*)))]
+      ['/ (string-append (c (first e*)) "/" (c (second e*)))]
+      ['* (string-append (c (first e*)) "*" (c (second e*)))]
+      ['< (string-append (c (first e*)) "<" (c (second e*)))]
+      ['> (string-append (c (first e*)) ">" (c (second e*)))]
+      ['equal? (string-append (c (first e*)) "==" (c (second e*)))]
+      [(eq? pr 'iszero?) (string-append "(" (c (car e*)) "==0)")]
+      ['and (string-append (c (first e*)) "&&" (c (second e*)))]
+      ['or (string-append (c (first e*)) "||" (c (second e*)))]
+      ['not ("!" (string-append (c (first e*))))]
+      ['car (let ([e (first e*)]) (string-append (c e) "[0]"))]
+      ['length (let ([e (first e*)])
+                (string-append "sizeof(" (c e) ")/sizeof(" (c (parse-L12 `(car e))) ")"))]
+
+      ['cdr (let ([e (first e*)] [len (c (parse-L12 `(primapp length e)))]) ;;Se considera el caso como si fuera una pila se va quitando el 1er elemento y se queda con la cola
+            (string-append "for(i=1; i<" len "; i++){\n"
+                                    (c e) "[i]=" (c e) "[i+1];" "\n
+                                      
+                            }" ))]
+                                          )]
+      
+                                          
+                                          
+      
+    )
+       )
