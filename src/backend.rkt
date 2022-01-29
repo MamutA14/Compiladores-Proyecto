@@ -139,6 +139,14 @@
                                     (c e) "[i]=" (c e) "[i+1];" "\n
                                       
                             }" ))]
+      [(array ,c0 ,t [,e* ...])
+       (string-append
+                   (symbol->string t) (string #\space) (string-append "arr" (number->string (~v (generate-foo)))) "["(number->string c0)"] " "= "  "{"
+                   (let f ([e* e*]) 
+                               (if (null? e*)
+                                 ""
+                                (string-append (c (first e*)) ","(f (rest e*)))) )"};")] 
+      [(,e0 ,e1) (string-append (c e0)";\n"(c e1)";")]
                                           )]
       
                                           
