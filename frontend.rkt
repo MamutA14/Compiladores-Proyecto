@@ -1,7 +1,7 @@
 #lang nanopass
 (require racket/random)
 (require nanopass/base)
-
+(provide (all-defined-out))
 
 
 ;;Definición de Lenguaje Fuente
@@ -181,34 +181,17 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
 
 ;;================== PASS 5 : un-anonymous ===============
 
+(define foo-counter 0)
+(define (generate-foo)
+    (begin
+    (set! foo-counter (+ 1 foo-counter))
+    foo-counter ))
+
+
 (define-pass un-anonymous : L3 (ir) -> L4 ()
-  (definitions
-    ;;Función auxiliar que va a  generar una cadena aleatoria oscilando entre un tamaño entre 3 y 7
-    (define (generate-random-string)
-      ;;Tamaño de la cadena
-      (let ([len (random 3 7)])
-        (define bs
-          ;;Se divide entre dos el tamaño de  la cadena ya que sera la base en el que se trabajara
-          (quotient
-           (if (odd? len)
-               (add1 len)
-               len)
-           2))
-        (define str
-          (with-output-to-string ;;Permitira devolver el resultado al llamar a la función de la forma str
-            (lambda ()
-              (for ([b (in-bytes (crypto-random-bytes bs ))]);;Iterara por una lista de números aleatorios del tamaño de la mitad de la cadena
-                (when (< b 16)
-                  (display "0")) ;; Si es número menor a la base 16 entonces se concatena un 0
-                  (display (number->string b 16))
-          )))) ;; Se imprimira un número en base 16 y se concatenara con todos los demás
-        (if (odd? len)
-            (substring str 0 len);;Como la cadena es mayor por un índice extra se toma la subcadena de 0, len
-            str))
-       ))
        (Expr : Expr (ir) -> Expr()
              [(lambda ([,x* ,t*]...) ,[body*] ...,[body])
-             (let ([fooaux (generate-random-string)]) (let ([foo (string->symbol (string-append "f"fooaux) )])
+             (let ([fooaux (~v (generate-foo))]) (let ([foo (string->symbol (string-append "foo"fooaux) )])
            `(letfun ([,foo Lambda (lambda ([,x* ,t*] ...) ,body* ... ,body)]) ,foo)))]
         )
   )
@@ -280,6 +263,10 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
          `(let ([,x ,t ,e]) ,body* ... ,body)]
         [(letrec ([,x ,t ,[Expr : e (cons x env) -> e]]) ,[Expr : body* (cons x env) -> body*] ..., [Expr : body (cons x env) -> body])
          `(letrec ([,x ,t ,e]) ,body* ..., body)]
+         ;; para las foo definidas
+        [(letfun ([,x ,t ,[Expr : e (cons x env) -> e] ]) ,[Expr : body (cons x env) -> body])
+         `(letfun ([,x ,t ,e]) ,body)]
+        ;; para las lambda
         [(lambda ([,x* ,t*] ...) ,[Expr : body* (append x* env) -> body*] ... , [Expr : body (append x* env) -> body])
          `(lambda ([,x* ,t*] ...) ,body* ... ,body)]
          ;; caso para el for
@@ -295,4 +282,4 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
 ;; todos los procesos de front aplicados
 
 (define (front-passes exp)
-    (verify-vars (verify-arity (un-anonymous (identify-assigments ( curry-let (remove-string (remove-one-armed-if exp) )))))))
+    (verify-vars (verify-arity (un-anonymous (identify-assigments ( curry-let (remove-string (remove-one-armed-if exp) ))))))  )

@@ -258,8 +258,7 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
                  [paramst* t*])
            (if (equal? (length paramsx*) 1)
                `(lambda ([,(car paramsx*),(car paramst*)]) ,body* ...,body)
-               `(lambda ([,(car paramsx*),(car paramst*)]),(f (cdr paramsx*) (cdr paramst*)))
-               ))]
+               `(lambda ([,(car paramsx*),(car paramst*)]),(f (cdr paramsx*) (cdr paramst*)))  ))]
         [(,[e0],[e1]  ...)
          (let f ([paramse0 e0]
                  [paramse1 e1])
