@@ -86,6 +86,10 @@
         `(array ,(length e*)  ,t  [,e* ...] )) ] ))
 
 
+;;Función auxiliar que extrae elementos de un arreglo
+(define (extract-array e)
+  (nanopass-case (L9 Expr) e
+                 [(array ,len ,t (,e* ...)) (list len t e*)]))
 ;==================== Función c ================================
 (define (c expr)
   (nanopass-case
@@ -103,5 +107,12 @@
        ['Bool  "int"]
        ['Char  "char"]
        )]
-   [(primapp )]
+   [(while [,e0] ,e1) "while (" (c e0) ")" "{" (c e1) "}"]
+   [(for [,x ,e0] ,e1)
+     (let* ([size (car e0)]
+            [t (second e0)]
+            [e* (cdddr e0)])
+       (string-append "for(" (c t) " " (c x) "=0; i<" (number->string size) ";i++){" (c e1) "}"))]
+   [(primapp ,pr ,e* ...)
+    (match pr)]
        ))
