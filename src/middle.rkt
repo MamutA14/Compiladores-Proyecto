@@ -198,8 +198,7 @@
                     (caddr t0)                                                   ;; Al aplicar la funcion se devuelve T2
                     (error 'J "El tipo de ~a no es compatible con el de ~a  para realizar la aplicacion de funcion." e0 e1) )  )]
         [(while [,[e0]] ,e1) (J e1 env)]
-        [(for [,x ,[e0]] ,e1)  (J e1 (add-var-to-env x (caddr e0) env)) ]
-  ))
+        [(for [,x ,[e0]] ,e1)  (J e1 (add-var-to-env x (caddr e0) env)) ] ))
 
 (define (apply-J e)
     (begin

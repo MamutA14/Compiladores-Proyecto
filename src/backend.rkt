@@ -70,35 +70,134 @@
 
 (define-parser parse-L8 L8)
 
-(define-pass assigment : L7 (ir) -> L8 (hash)
+(define-pass assigment-aux : L7 (ir) -> L8 (hash)
   (Expr : Expr (ir) -> Expr ()
         [(let ([,x ,t ,e]) ,[body]) `(let ,x ,body)]
         [(letrec ([,x ,t ,e]) ,[body]) `(letrec ,x ,body)]
         [(letfun ([,x ,t ,e]) ,[body]) `(letfun ,x ,body)])
   (values (Expr ir) (symbol-table-var ir)))
 
+(define (assigment e)
+    (define-values (assigment-exp assigment-hash)
+        (assigment-aux e)
+    )
+    (list assigment-exp assigment-hash)
+ )
 
 ;;================== PASS 13 : list-to-array ===============
 
-; Funcion auxiliar que dada una lista toma el primer elemento y aplica sobre ese elemento el algoritmo J
-(define (J-aux x)
-    (nanopass-case (L8 Expr) x
-        [(list ,e* ... ,e) (J e '())] ))
+
 ;; Lenguaje que servira en traducir listas (no vacias) en arreglos
 (define-language L9
     (extends L8)
     (Expr (e body)
         (- (list e* ...))
         (+ (array c t [e* ...]))))
+
 (define-parser parse-L9 L9)
 
-(define-pass list-to-array : L8 (ir) -> L9 ()
+
+; Funcion auxiliar que dada una lista toma el primer elemento y aplica sobre ese elemento el algoritmo J
+
+
+(define global-env-JL8 '())
+
+(define (J-forL8-aux x s-table)
+    (nanopass-case (L8 Expr) x
+        [(list ,e* ... ,e) (J-forL8 e s-table)] ))
+
+(define-pass list-to-array-aux : L8 (ir g-hash) -> L9 ()
  (Expr : Expr (ir) -> Expr()
     [ (list ,[e*] ...)
-        (let ([t (J-aux ir)])
+        (let ([t (J-forL8-aux ir g-hash)])
         `(array ,(length e*)  ,t  [,e* ...] )) ] ))
 
+(define (list-to-array exp-hash)
+    (begin
+        (set! global-env-JL8 '())
+    (let* ([exp (car exp-hash)]
+            [hash-t (cadr exp-hash)])
+        (list-to-array-aux exp exp-hash)
+    ))
+ )
 
+
+
+
+
+(define (add-to-global-JL8 x t )
+    (set! global-env-JL8 (append (cons (list x t) '()) global-env-JL8))
+)
+
+(define (J-forL8 e env)
+    (nanopass-case (L8 Expr) e
+       [,x  (find-type x (append env global-env-JL8))]         ;; para variables buscamos directamente en el ambiente
+
+       [(define ,x ,t ,e)
+            (let ([tipo (J-forL8 e env)])
+            (begin
+            (set! global-env-JL8 (add-var-to-env x tipo global-env-JL8))
+            tipo) )]
+
+        [(const ,t ,c ) t]              ;; para constantes tenemos el tipo especificado en el const
+
+        [(begin ,e* ... ,e)
+            (begin
+            (for ([i e*]) (J-forL8 i env))
+            (J-forL8 e env))]   ;; Retornamos el tipo de la ultima exprexion
+
+        [(primapp ,pr ,e* ...)
+            (let ([tipos  (map (lambda (x) (J-forL8 x env)) e*)] )
+            (if (check-args-types pr tipos)
+                (case pr
+                    [(+ - * / ++ -- length) 'Int]
+                    [(< > equal? iszero? equal-lst? empty? elem? and or not) 'Bool]
+                    [(concat) (car tipos)]
+                    [(cons append) (cadr tipos)]
+                    [(car) (caddr (car  (map (lambda (x) (J x env)) e*)))]
+                    [(cdr) (car  (map (lambda (x) (J x env)) e*) )])
+                (error 'J-forL8 "Los tipos de ~a no son compatbles para la operacion ~a" e* pr)) )]
+
+        ;; Para el if verificamos que el tipo de e0 sea Bool, y los tipos de e1 y e2 sean los mismos
+        [(if ,e0 ,e1 ,e2)
+            (if (and (equal?  (J-forL8 e0 env) 'Bool)  (unify (J-forL8 e1 env) (J-forL8 e2 env)))
+                (J-forL8 e1 env)
+                (error 'J-forL8 "El tipo de ~a debe ser Bool. Y el tipo de ~a debe ser igual al de ~a " e0 e1 e2) )]
+
+        ;; Para las lambdas el tipo es t -> type_of_body
+        [(lambda ([,x ,t]) ,body)
+         (begin
+         (add-to-global-JL8 x t)
+         (list t '->  (J-forL8 body (add-var-to-env x t env))) )]
+
+        ;; para expresiones let devolvemos el tipo del body , los tipos de x estan en la tabla de simbolos
+        [(let ,x ,body)
+                (J-forL8 body env)]
+        [(letrec ,x ,body)
+                (J-forL8 body env)]
+        [(letfun ,x ,body)
+                (J-forL8 body env)]
+
+
+        [(list ,e* ...)
+            ;; si es la lista vacia devoldemos List
+            (if (empty? e*)
+                'List
+                ;; Calculamos los tipos de los elementos
+                (let* ([types (map (lambda (x) (J-forL8 x env)) e*) ]
+                        [t1 (car types)])
+                    ;; Si todos los mismos son los mismos deovlvemos List of T1
+                    (if (andmap (lambda (x) (unify x t1)) types)
+                        (list 'List 'of t1)
+                        (error 'J-forL8 "Los elementos de la lista ~a no son del mismo tipo." e*)))  )]
+
+        [(,e0 ,e1)
+            (let ([t0 (J-forL8 e0 env)] [t1 (J-forL8 e1 env)])
+                (if (and (list? t0) (equal? (cadr t0) '->) (unify (car t0) t1))  ;; verificamos que el tipo de e0 sea T1->T2 y el de e1 sea T1
+                    (caddr t0)                                                   ;; Al aplicar la funcion se devuelve T2
+                    (error 'J-forL8 "El tipo de ~a no es compatible con el de ~a  para realizar la aplicacion de funcion." e0 e1) )  )]
+        [(while [,[e0]] ,e1) (J-forL8 e1 env)]
+        [(for [,x ,[e0]] ,e1)  (J-forL8 e1 (add-var-to-env x (caddr e0) env)) ] ))
 
 
 
