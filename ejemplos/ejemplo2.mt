@@ -1,0 +1,1 @@
+(for [x (list (quot 13) (quot 15))] (primapp equal? x x) )
