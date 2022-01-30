@@ -123,10 +123,12 @@
 
 
 
+;; funcio para agregar al amniente global
 (define (add-to-global-JL8 x t )
     (set! global-env-JL8 (append (cons (list x t) '()) global-env-JL8))
 )
 
+;;version de J para L8
 (define (J-forL8 e env)
     (nanopass-case (L8 Expr) e
        [,x  (find-type x (append env global-env-JL8))]         ;; para variables buscamos directamente en el ambiente
@@ -200,28 +202,28 @@
 
 
 
-;;Función auxiliar que extrae elementos de un arreglo
-;;(define (extract-array e)
- ;; (nanopass-case (L9 Expr) e
-   ;;              [(array ,len ,t (,e* ...)) (list len t e*)]))
 
 
 
 ;==================== Función c ================================
 
+;; funcion que pasa a string corresponfiente de codigo C
 (define (c exp-table)
     (let* ([exp (car exp-table)]
             [tabla (cadr exp-table)])
         (c-aux exp tabla) ))
 
+;; remueve cuotas en una cadena
 (define (remove-quote s)
     (list->string (filter (lambda (x) (not (eq? x #\'))) (string->list s))))
 
+;; agrega un semicolon si hace falta
 (define (add-semicolon-if-needed x)
     (if (eq? (last (string->list x)) #\;)
       x
-      (string-append x ";"))
-)
+      (string-append x ";")) )
+
+;; funcion auxiliar para ocupar la tablade simbolos
 (define (c-aux expr tabla)
   (nanopass-case
    (L9 Expr) expr
@@ -320,26 +322,26 @@
                                           ) )
 
 
-
+;; funcion para obtener el tamanio de un arreglo
 (define (get-len-arr expr)
     (nanopass-case (L9 Expr) expr
         [(array ,c ,t [,e* ...]) c]
         [else expr]))
-
+;; fucnio para obtener el tipo de un arreglo
 (define (get-type-arr expr)
     (nanopass-case (L9 Expr) expr
         [(array ,c ,t [,[e*] ...]) t]
         [else expr]))
-
+;; dada una lista junta en una sola cadena poniendo comas en medio
 (define (join-str lst)
     (foldr (lambda (x y) (string-append x "," y )) "" lst) )
-
+;; join con salto de linea
 (define (begin-join-str lst)
     (foldr (lambda (x y) (string-append x "\n" y )) "" lst) )
 
-
+;;remueve el ultimo char de una cadena
 (define (all-but-last l) (list->string (reverse (cdr (reverse (string->list l))))))
-
+;;remueve los primero n de una cadena
 (define (take-n str n)
     (list->string (take-right (string->list str) n))
 )
