@@ -214,9 +214,19 @@
             [tabla (cadr exp-table)])
         (c-aux exp tabla) ))
 
+(define (remove-quote s)
+    (list->string (filter (lambda (x) (not (eq? x #\'))) (string->list s))))
+
+
 (define (c-aux expr tabla)
   (nanopass-case
    (L9 Expr) expr
+   [(define ,x ,t ,e)
+        (let* ([tipo (c-aux t tabla)]
+                [es (c-aux e tabla)])
+            (string-append tipo " " (remove-quote (~v x)) " = " es ";")
+        )
+   ]
    [(const ,t ,c)
     (match t
            ['Int (number->string c)]
