@@ -1,3 +1,16 @@
+
+#|
+Compiladores 2022-1  Proyecto Final
+Alumnos:
+- Acosta Meza Alam
+  No.cuenta : 315124569
+- Arroyo Rivera Juan José
+  No.cuenta: 416053223
+- Sierra Casiano Vladimir
+  No.cuenta: 316020361
+|#
+
+
 #lang nanopass
 
 (require "frontend.rkt")
