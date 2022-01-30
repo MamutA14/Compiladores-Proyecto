@@ -247,6 +247,10 @@
    ;; para el while creaoms el bloque de codigos
    [(while [,e0] ,e1) (string-append "while (" (c-aux e0 tabla) ")" "{\n    " (add-semicolon-if-needed (c-aux e1 tabla)) "\n}")]
 
+    [(begin ,e* ... ,e)
+        (let* ([lineas (map (lambda (x) (add-semicolon-if-needed (c-aux x tabla))) (append e* (list e))) ])
+            (string-append "{\n" (begin-join-str lineas) "}" )) ]
+
    [(for [,x ,e0] ,e1)
      (let* ( [len (get-len-arr e0) ]
               [tipo (c-aux (get-type-arr e0) tabla)]
@@ -308,5 +312,9 @@
 
 (define (join-str lst)
     (foldr (lambda (x y) (string-append x "," y )) "" lst) )
+
+(define (begin-join-str lst)
+    (foldr (lambda (x y) (string-append x "\n" y )) "" lst) )
+
 
 (define (all-but-last l) (list->string (reverse (cdr (reverse (string->list l))))))
