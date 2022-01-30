@@ -17,7 +17,7 @@ Alumnos:
 (require "backend.rkt")
 
 ;; Ruta del archivo de entrada de extension .mt
-(define path "ejemplo1")
+(define path "../ejemplos/ejemplo1")
 
 ;; Funcion para abrir el archivo
 (define (read-file path)
