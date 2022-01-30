@@ -272,13 +272,13 @@
                                     (c-aux e tabla) "[i]=" (c-aux e tabla) "[i+1];" "\n
                                       
                             }" ))])]
-     ;; [(array ,c0 ,t [,e* ...])
+     [(array ,c0 ,t [,e* ...])  
+       (string-append
+                   (symbol->string t) (string #\space) (string-append "arr" (number->string (~v (generate-foo)))) "["(number->string c0)"] " "= "  "{"
+                   (let f ([e* e*]) 
+                               (if (null? e*)
+                                 ""
+                                (string-append (c-aux (first e*) tabla) ","(f (rest e*)))) )"};")]
     [(,e0 ,e1) (string-append (c-aux e0 tabla)";\n"(c-aux e1 tabla)";")]
                                           ) )
 
-     ;;  (define (string-append)
-       ;;            (symbol->string t) (string #\space) (string-append "arr" (number->string (~v (generate-foo)))) "["(number->string c0)"] " "= "  "{"
-         ;;          (let f ([e* e*])
-           ;;                    (if (null? e*)
-             ;;                    ""
-               ;;                 (string-append (c (first e*)) ","(f (rest e*)))) )"};")
