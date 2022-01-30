@@ -13,8 +13,10 @@ Alumnos:
 (require racket/pretty)
 
 (require "frontend.rkt")
+(require "middle.rkt")
+(require "backend.rkt")
 
-;; Ruta del archivode entrada de extension .mt
+;; Ruta del archivo de entrada de extension .mt
 (define path "ejemplo1")
 
 ;; Funcion para abrir el archivo
@@ -29,31 +31,49 @@ Alumnos:
    #:mode 'text #:exists 'replace))
 
 ;; Codigo parseado del archivo inicial de entrada
-(define lf-code (parse-LF read-file))
+(define lf-code (parse-LF (read-file path)))
 
 ;; Funcion que aplica las tres fases de compilacion a
 ;; un archivo de entrada con codigo en lenguaje fuente y escribe tres archivos
 ;; asociados a cada fase
 ;; TODO: Archivo middle, y back (codigo c este ultimo)
-
-
 (define (compile-with-output lf-code path)  
-  (write-file (pretty-format (front-end-passes lf-code)) (string-append path ".fe")))
-  ;(write-file (pretty-format (processes-Middle-end exp)) (string-append path ".me")
-  ;(write-file (pretty-format ((processes-Back-end exp)) (string-append path ".c"))
+  (write-file (pretty-format (front-end-passes lf-code)) (string-append path ".fe"))
+  (write-file (pretty-format (middle-end-passes exp)) (string-append path ".me"))
+  (write-file (pretty-format (back-end-passes exp)) (string-append path ".c")))
 
 ;; Definicion de los pases en cada una de las 3 fases de compilación
 
+;; Passes del front-end 
 (define (front-end-passes lf-code)
   (verify-vars
    (verify-arity
     (un-anonymous
-     (identify-assignments
+     (identify-assigments
       (curry-let
        (remove-string
          (remove-one-armed-if lf-code))))))))
 
+;; Passes del middle-end
+(define (middle-end-passes exp)
+  (uncurry
+   (type-infer
+    (type-const
+     (curry
+      (front-end-passes exp))))))
+
+;; Passes del back-end
+(define (back-end-passes exp)
+  (c
+   (list-to-array
+    (assigment
+     (middle-end-passes exp)))))
+
 (println "Codigo de LF en el archivo de entrada:")
 lf-code
-(println "Codigo intermedio tras la fase de front-end:")
+(println "Codigo intermedio tras la fase de front-end (ejemplo.fe):")
 (front-end-passes lf-code)
+(println "Codigo intermedio tras la fase de middle-end (ejemplo.me):")
+(middle-end-passes lf-code)
+(println "Codigo intermedio tras la fase de middle-end (ejemplo.c):")
+(back-end-passes lf-code)
