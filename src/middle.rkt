@@ -51,9 +51,11 @@
   (Expr (e body)
         (-
          (quot c)
+         (define x e)
          )
         (+
          (const t c)
+         (define x t e)
          ) ) )
 
 
@@ -65,7 +67,9 @@
            [(number? c) `(const , 'Int , c) ]
            [(boolean? c) `(const , 'Bool , c) ]
            [else `(const , 'Char , c) ])
-        ])
+        ]
+        [(define ,x ,[e])  `(define ,x  ,'Bool ,e)]
+        )
    )
 
 
@@ -117,7 +121,7 @@
     (nanopass-case (L6 Expr) e
         [,x  (find-type x (append env global-env-J))]         ;; para variables buscamos directamente en el ambiente
 
-       [(define ,x ,e)
+       [(define ,x ,t ,e)
             (let ([tipo (J e env)])
             (begin
             (set! global-env-J (add-var-to-env x tipo global-env-J))
@@ -205,6 +209,7 @@
 
 (define-pass type-infer : L6(ir) -> L6()
     (Expr : Expr (ir) -> Expr ()
+        [(define ,x ,t ,e) `(define  ,x  ,(apply-J e) ,e)]
         ;; Para let solo inferimos el tipo de t cuando de entrada es List, lo denombra a List of
         [(let ([,x ,t ,[e]]) ,[body])
             (case t

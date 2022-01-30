@@ -208,6 +208,7 @@ sus parametros adicionales se encuentren dentro  de otro let/letrec del body ori
     ; Los siguientes son operadores compatibles con cualquier numero de parametros
     ["+" #t]
     ["-" #t]
+    ["*" #t]
     ["/" #t]
     ["or" #t]
     ["and" #t]

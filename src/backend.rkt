@@ -3,11 +3,17 @@
 (require "frontend.rkt")
 (require "middle.rkt")
 (provide (all-defined-out))
+
+
 ;;================== PASS 12 : assigment ===============
 (define (symbol-table-var-aux expr table)
     (nanopass-case (L7 Expr) expr
-        [(let ([,x ,t ,[e] ]) ,body)
-            (begin (hash-set! table x (cons t e))
+        [(define ,x ,t ,e)
+            (begin
+            (hash-set! table x (cons t  e))
+             table)]
+        [(let ([,x ,t ,e ]) ,body)
+            (begin (hash-set! table x (cons t e) )
                     (symbol-table-var-aux body table))]
         [(letrec ([,x ,t ,e]) ,body)
             (begin (hash-set! (symbol-table-var-aux body table) x (cons t e))
@@ -25,7 +31,9 @@
         [(primapp ,pr ,[e*] ...)
             (let f ([e* e*]) (if (null? e*) table (symbol-table-var-aux (first e*) (f (rest e*)))))]
         [(begin ,e* ... ,e)
-            (begin (map (lambda (e) (symbol-table-var-aux e table)) e*))]
+            (begin
+                (map (lambda (x) (symbol-table-var-aux x table)) e*)
+                (symbol-table-var-aux e table) )]
         [(if ,e0 ,e1 ,e2)
             (begin
                 (symbol-table-var-aux e0 table)
@@ -34,6 +42,11 @@
         [(lambda ([,x* ,t*] ...) ,body) (symbol-table-var-aux body table)]
         [(list ,e* ... ,e)
             (begin (map (lambda (e) (symbol-table-var-aux e table)) e*) (symbol-table-var-aux e table))]
+        [(while [,[e0]] ,e1)
+            (begin
+                (symbol-table-var-aux e0 table)
+                (symbol-table-var-aux e1 table) )]
+        [(for [,x ,[e0]] ,e1)  (symbol-table-var-aux e1 table) ]
         [else table] ))
 
 ;; Funcion que genera la tabla de simbolos de una expresión
@@ -61,7 +74,7 @@
   (Expr : Expr (ir) -> Expr ()
         [(let ([,x ,t ,e]) ,[body]) `(let ,x ,body)]
         [(letrec ([,x ,t ,e]) ,[body]) `(letrec ,x ,body)]
-        [(letrec ([,x ,t ,e]) ,[body]) `(letfun ,x ,body)])
+        [(letfun ([,x ,t ,e]) ,[body]) `(letfun ,x ,body)])
   (values (Expr ir) (symbol-table-var ir)))
 
 
@@ -86,10 +99,15 @@
         `(array ,(length e*)  ,t  [,e* ...] )) ] ))
 
 
+
+
+
+
 ;;Función auxiliar que extrae elementos de un arreglo
-(define (extract-array e)
-  (nanopass-case (L9 Expr) e
-                 [(array ,len ,t (,e* ...)) (list len t e*)]))
+;;(define (extract-array e)
+ ;; (nanopass-case (L9 Expr) e
+   ;;              [(array ,len ,t (,e* ...)) (list len t e*)]))
+
 ;==================== Función c ================================
 (define (c expr)
   (nanopass-case
@@ -109,7 +127,7 @@
        )]
    [(while [,e0] ,e1) "while (" (c e0) ")" "{\n" (c e1) "\n}"]
    [(for [,x ,e0] ,e1)
-     (let* ([d (list-to-array (parse-L11 e0))]
+     (let* ([d (list-to-array (parse-L8 e0))]
             [size (first d)]
             [t (second d)]
             [e* (third e0)])
@@ -132,25 +150,20 @@
       ['not ("!" (string-append (c (first e*))))]
       ['car (let ([e (first e*)]) (string-append (c e) "[0]"))]
       ['length (let ([e (first e*)])
-                (string-append "sizeof(" (c e) ")/sizeof(" (c (parse-L12 `(car e))) ")"))]
+                (string-append "sizeof(" (c e) ")/sizeof(" (c (parse-L9 `(car e))) ")"))]
 
-      ['cdr (let ([e (first e*)] [len (c (parse-L12 `(primapp length e)))]) ;;Se considera el caso como si fuera una pila se va quitando el 1er elemento y se queda con la cola
+      ['cdr (let ([e (first e*)] [len (c (parse-L9 `(primapp length e)))]) ;;Se considera el caso como si fuera una pila se va quitando el 1er elemento y se queda con la cola
             (string-append "for(i=1; i<" len "; i++){\n"
                                     (c e) "[i]=" (c e) "[i+1];" "\n
                                       
-                            }" ))]
-      [(array ,c0 ,t [,e* ...])
-       (string-append
-                   (symbol->string t) (string #\space) (string-append "arr" (number->string (~v (generate-foo)))) "["(number->string c0)"] " "= "  "{"
-                   (let f ([e* e*]) 
-                               (if (null? e*)
-                                 ""
-                                (string-append (c (first e*)) ","(f (rest e*)))) )"};")] 
-      [(,e0 ,e1) (string-append (c e0)";\n"(c e1)";")]
-                                          )]
-      
-                                          
-                                          
-      
-    )
-       )
+                            }" ))])]
+     ;; [(array ,c0 ,t [,e* ...])
+    [(,e0 ,e1) (string-append (c e0)";\n"(c e1)";")]
+                                          ) )
+
+     ;;  (define (string-append)
+       ;;            (symbol->string t) (string #\space) (string-append "arr" (number->string (~v (generate-foo)))) "["(number->string c0)"] " "= "  "{"
+         ;;          (let f ([e* e*])
+           ;;                    (if (null? e*)
+             ;;                    ""
+               ;;                 (string-append (c (first e*)) ","(f (rest e*)))) )"};")
