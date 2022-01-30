@@ -294,8 +294,29 @@
                        (string-append t (string #\space) (symbol->string )))
      (string-append
       (c-aux (hash-ref tabla x) tabla) (c-aux (hash-ref tabla x) tabla) "=" (c-aux body tabla))]
+    [(letrec ,x ,body)
+      (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ]
+            [ e (
+                (lambda (params)
+                 (nanopass-case (L9 Expr) params
+                   [(const ,t ,c) c ]
+                   )
+                    )(c-aux (hash-ref tabla x) tabla))])
+                       (string-append t (string #\space) (symbol->string x) "("(c-aux e tabla ) "){" (c-aux body tabla) "}" ))]
+          [(letfun ,x ,body)
+      (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ]
+            [ e (
+                (lambda (params)
+                 (nanopass-case (L9 Expr) params
+                   [(const ,t ,c) c ]
+                   )
+                    )(c-aux (hash-ref tabla x) tabla))])
+                       (string-append t (string #\space) (symbol->string x) "("(c-aux e tabla ) "){" (c-aux body tabla) "}" ))]
+ 
     [(,e0 ,e1) (string-append (c-aux e0 tabla)";\n"(c-aux e1 tabla)";")]
+    
     [else expr]
+    
                                           ) )
 
 
