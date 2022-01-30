@@ -117,11 +117,9 @@
         (set! global-env-JL8 '())
     (let* ([exp (car exp-hash)]
             [hash-t (cadr exp-hash)])
-        (list-to-array-aux exp exp-hash)
+        (list (list-to-array-aux exp exp-hash) hash-t)
     ))
  )
-
-
 
 
 
@@ -207,8 +205,16 @@
  ;; (nanopass-case (L9 Expr) e
    ;;              [(array ,len ,t (,e* ...)) (list len t e*)]))
 
+
+
 ;==================== Función c ================================
-(define (c expr)
+
+(define (c exp-table)
+    (let* ([exp (car exp-table)]
+            [tabla (cadr exp-table)])
+        (c-aux exp tabla) ))
+
+(define (c-aux expr tabla)
   (nanopass-case
    (L9 Expr) expr
    [(const ,t ,c)
@@ -224,40 +230,40 @@
        ['Bool  "int"]
        ['Char  "char"]
        )]
-   [(while [,e0] ,e1) "while (" (c e0) ")" "{\n" (c e1) "\n}"]
+   [(while [,e0] ,e1) "while (" (c-aux e0 tabla) ")" "{\n" (c-aux e1 tabla) "\n}"]
    [(for [,x ,e0] ,e1)
      (let* ([d (list-to-array (parse-L8 e0))]
             [size (first d)]
             [t (second d)]
             [e* (third e0)])
-       (string-append "for(" (c t) " " (c x) "=0; i < " (number->string size) ";i++){\n" (c e1) "\n}"))]
+       (string-append "for(" (c-aux t tabla) " " (c-aux x tabla) "=0; i < " (number->string size) ";i++){\n" (c-aux e1 tabla) "\n}"))]
    [,x (symbol->string x)]
    [(primapp ,pr ,e* ...)
     (match pr
-      ['+ (string-append (c (first e*)) "+" (c (second e*)))]
-      ['- (string-append (c (first e*)) "-" (c (second e*)))]
-      ['/ (string-append (c (first e*)) "/" (c (second e*)))]
-      ['* (string-append (c (first e*)) "*" (c (second e*)))]
-      ['< (string-append (c (first e*)) "<" (c (second e*)))]
-      ['> (string-append (c (first e*)) ">" (c (second e*)))]
-      ['equal? (string-append (c (first e*)) "==" (c (second e*)))]
-      ['iszero? (string-append "(" (c (first e*)) "==0)")]
-      ['++ (string-append  (c (first e*)) "++;" )]
-      ['-- (string-append  (c (first e*)) "--;" )]
-      ['and (string-append (c (first e*)) "&&" (c (second e*)))]
-      ['or (string-append (c (first e*)) "||" (c (second e*)))]
-      ['not ("!" (string-append (c (first e*))))]
-      ['car (let ([e (first e*)]) (string-append (c e) "[0]"))]
+      ['+ (string-append (c-aux (first e*) tabla) "+" (c-aux (second e*) tabla))]
+      ['- (string-append (c-aux (first e*) tabla) "-" (c-aux (second e*) tabla))]
+      ['/ (string-append (c-aux (first e*) tabla) "/" (c-aux (second e*) tabla))]
+      ['* (string-append (c-aux (first e*) tabla) "*" (c-aux (second e*) tabla))]
+      ['< (string-append (c-aux (first e*) tabla) "<" (c-aux (second e*) tabla))]
+      ['> (string-append (c-aux (first e*) tabla) ">" (c-aux (second e*) tabla))]
+      ['equal? (string-append (c-aux (first e*) tabla) "==" (c-aux (second e*) tabla))]
+      ['iszero? (string-append "(" (c-aux (first e*) tabla) "==0)")]
+      ['++ (string-append  (c-aux (first e*) tabla) "++;" )]
+      ['-- (string-append  (c-aux (first e*) tabla) "--;" )]
+      ['and (string-append (c-aux (first e*) tabla) "&&" (c-aux (second e*) tabla))]
+      ['or (string-append  (c-aux (first e*) tabla) "||" (c-aux (second e*) tabla))]
+      ['not ("!" (string-append (c-aux (first e*) tabla)))]
+      ['car (let ([e (first e*)]) (string-append (c-aux e tabla) "[0]"))]
       ['length (let ([e (first e*)])
-                (string-append "sizeof(" (c e) ")/sizeof(" (c (parse-L9 `(car e))) ")"))]
+                (string-append "sizeof(" (c-aux e tabla) ")/sizeof(" (c-aux (parse-L9 `(car e)) tabla) ")"))]
 
-      ['cdr (let ([e (first e*)] [len (c (parse-L9 `(primapp length e)))]) ;;Se considera el caso como si fuera una pila se va quitando el 1er elemento y se queda con la cola
+      ['cdr (let ([e (first e*)] [len (c-aux (parse-L9 `(primapp length e)) tabla)]) ;;Se considera el caso como si fuera una pila se va quitando el 1er elemento y se queda con la cola
             (string-append "for(i=1; i<" len "; i++){\n"
-                                    (c e) "[i]=" (c e) "[i+1];" "\n
+                                    (c-aux e tabla) "[i]=" (c-aux e tabla) "[i+1];" "\n
                                       
                             }" ))])]
      ;; [(array ,c0 ,t [,e* ...])
-    [(,e0 ,e1) (string-append (c e0)";\n"(c e1)";")]
+    [(,e0 ,e1) (string-append (c-aux e0 tabla)";\n"(c-aux e1 tabla)";")]
                                           ) )
 
      ;;  (define (string-append)
