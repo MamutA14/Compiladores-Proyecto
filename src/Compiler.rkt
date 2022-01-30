@@ -39,8 +39,8 @@ Alumnos:
 ;; TODO: Archivo middle, y back (codigo c este ultimo)
 (define (compile-with-output lf-code path)  
   (write-file (pretty-format (front-end-passes lf-code)) (string-append path ".fe"))
-  (write-file (pretty-format (middle-end-passes exp)) (string-append path ".me")))
-  ;;(write-file (pretty-format (back-end-passes exp)) (string-append path ".c")))
+  (write-file (pretty-format (middle-end-passes exp)) (string-append path ".me"))
+  (write-file (pretty-format (back-end-passes exp)) (string-append path ".c")))
 
 ;; Definicion de los pases en cada una de las 3 fases de compilación
 
@@ -62,9 +62,18 @@ Alumnos:
      (curry
       (front-end-passes exp))))))
 
+;; Passes del back-end
+(define (back-end-passes exp)
+  (c
+   (list-to-array
+    (assigment
+     (middle-end-passes exp)))))
+
 (println "Codigo de LF en el archivo de entrada:")
 lf-code
 (println "Codigo intermedio tras la fase de front-end (ejemplo.fe):")
 (front-end-passes lf-code)
 (println "Codigo intermedio tras la fase de middle-end (ejemplo.me):")
 (middle-end-passes lf-code)
+(println "Codigo intermedio tras la fase de middle-end (ejemplo.c):")
+(back-end-passes lf-code)
