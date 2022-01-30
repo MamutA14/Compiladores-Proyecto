@@ -289,11 +289,19 @@
         (let ([elems (map (lambda (x) (c-aux x tabla)) e*)])
        (string-append (c-aux t tabla) " arr" (~v (generate-foo)) "["  (~v c0) "]= ["  (all-but-last (join-str elems))  "];" ) )]
 
-     [(let ,x ,body) ;; (let ((,x ,t ,e)) ,body* ... ,body)
-      (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ])
-                       (string-append t (string #\space) (symbol->string )))
-     (string-append
-      (c-aux (hash-ref tabla x) tabla) (c-aux (hash-ref tabla x) tabla) "=" (c-aux body tabla))]
+     [(let ,x ,body)
+         (let*
+            ([bodys (add-semicolon-if-needed (c-aux body tabla))]
+             [tipo (c-aux (car (hash-ref tabla x)) tabla)]
+             [declaration (c-aux (car (list-to-array (assigment (cdr (hash-ref tabla x))))) tabla) ] )
+            (string-append tipo " " (remove-quote (~v x)) " = " (add-semicolon-if-needed declaration) "\n" bodys)
+         ) ]
+     ;; (let ((,x ,t ,e)) ,body* ... ,body)
+    ;;  (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ])
+    ;;                   (string-append t (string #\space) (symbol->string ))
+    ;; (string-append
+     ;; (c-aux (hash-ref tabla x) tabla) (c-aux (hash-ref tabla x) tabla) "=" (c-aux body tabla)))]
+
     [(letrec ,x ,body)
       (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ]
             [ e (
@@ -339,3 +347,7 @@
 
 
 (define (all-but-last l) (list->string (reverse (cdr (reverse (string->list l))))))
+
+(define (take-n str n)
+    (list->string (take-right (string->list str) n))
+)
