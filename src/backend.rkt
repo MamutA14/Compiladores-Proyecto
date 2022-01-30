@@ -287,9 +287,12 @@
                                 (string-append (c-aux (first e*) tabla) ","(f (rest e*)))) )"};")]
      [(let ,x ,body) ;; (let ((,x ,t ,e)) ,body* ... ,body)
       (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ])
-                       (string-append t (string #\space) (symbol->string )))
-     (string-append 
-      (c-aux (hash-ref tabla x) tabla) (c-aux (hash-ref tabla x) tabla) "=" (c-aux body tabla))]
+                       (string-append t (string #\space) (symbol->string x) "=" (c-aux body tabla) ))
+     ]
+     [(letrec ,x ,body)
+      (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ])
+                       (string-append t (string #\space) (symbol->string x) "(){" (c-aux body tabla) "}" ))]
+     
     [(,e0 ,e1) (string-append (c-aux e0 tabla)";\n"(c-aux e1 tabla)";")]
                                           ) )
 
