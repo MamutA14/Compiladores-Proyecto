@@ -9,3 +9,4 @@
  (c (list-to-array (assigment (middle-passes (front-passes (parse-LF '(list (quot 1) (quot 2) )      ))))))
  (displayln (c (list-to-array (assigment (middle-passes (front-passes (parse-LF '(for [x (list (quot 13) (quot 15))] (primapp equal? x x) )      )))))))
  (displayln (c (list-to-array (assigment (middle-passes (front-passes (parse-LF '(begin (define x (quot 1)) (define y (quot 2)) (primapp < x y))      )))))))
+(displayln (c (list-to-array (assigment (middle-passes (front-passes (parse-LF '(let ([x Int (quot 1)]) x)      )))))))
