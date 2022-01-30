@@ -217,7 +217,11 @@
 (define (remove-quote s)
     (list->string (filter (lambda (x) (not (eq? x #\'))) (string->list s))))
 
-
+(define (add-semicolon-if-needed x)
+    (if (eq? (last (string->list x)) #\;)
+      x
+      (string-append x ";"))
+)
 (define (c-aux expr tabla)
   (nanopass-case
    (L9 Expr) expr
@@ -240,7 +244,9 @@
        ['Bool  "int"]
        ['Char  "char"]
        )]
-   [(while [,e0] ,e1) "while (" (c-aux e0 tabla) ")" "{\n" (c-aux e1 tabla) "\n}"]
+   ;; para el while creaoms el bloque de codigos
+   [(while [,e0] ,e1) (string-append "while (" (c-aux e0 tabla) ")" "{\n    " (add-semicolon-if-needed (c-aux e1 tabla)) "\n}")]
+
    [(for [,x ,e0] ,e1)
      (let* ([d (list-to-array (parse-L8 e0))]
             [size (first d)]
