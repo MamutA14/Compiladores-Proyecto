@@ -248,11 +248,14 @@
    [(while [,e0] ,e1) (string-append "while (" (c-aux e0 tabla) ")" "{\n    " (add-semicolon-if-needed (c-aux e1 tabla)) "\n}")]
 
    [(for [,x ,e0] ,e1)
-     (let* ([d (list-to-array (parse-L8 e0))]
-            [size (first d)]
-            [t (second d)]
-            [e* (third e0)])
-       (string-append "for(" (c-aux t tabla) " " (c-aux x tabla) "=0; i < " (number->string size) ";i++){\n" (c-aux e1 tabla) "\n}"))]
+     (let* ( [len (get-len-arr e0) ]
+              [tipo (c-aux (get-type-arr e0) tabla)]
+              [str1 (c-aux e0 tabla) ] )
+     ;;[ar (c-aux e0 tabla)])
+           ;; [size (first d)]
+            ;; [ce1 (c-aux e1 tabla)])
+       (string-append str1 "\n" "for(int i = 0; i <" (~v len) ";i++){\n" tipo " " (remove-quote (~v x)) " = arr" (~v foo-counter) "[i]; \n"
+            (add-semicolon-if-needed (c-aux e1 tabla)) "\n}"))]
    [,x (symbol->string x)]
    [(primapp ,pr ,e* ...)
     (match pr
@@ -278,18 +281,32 @@
                                     (c-aux e tabla) "[i]=" (c-aux e tabla) "[i+1];" "\n
                                       
                             }" ))])]
-     [(array ,c0 ,t [,e* ...])  
-       (string-append
-                   (symbol->string t) (string #\space) (string-append "arr" (number->string (~v (generate-foo)))) "["(number->string c0)"] " "= "  "{"
-                   (let f ([e* e*]) 
-                               (if (null? e*)
-                                 ""
-                                (string-append (c-aux (first e*) tabla) ","(f (rest e*)))) )"};")]
+     [(array ,c0 ,t [,e* ...])
+        (let ([elems (map (lambda (x) (c-aux x tabla)) e*)])
+       (string-append (c-aux t tabla) " arr" (~v (generate-foo)) "["  (~v c0) "]= ["  (all-but-last (join-str elems))  "];" ) )]
+
      [(let ,x ,body) ;; (let ((,x ,t ,e)) ,body* ... ,body)
       (let ([ t (J (c-aux (hash-ref tabla x) tabla) "") ])
                        (string-append t (string #\space) (symbol->string )))
-     (string-append 
+     (string-append
       (c-aux (hash-ref tabla x) tabla) (c-aux (hash-ref tabla x) tabla) "=" (c-aux body tabla))]
     [(,e0 ,e1) (string-append (c-aux e0 tabla)";\n"(c-aux e1 tabla)";")]
+    [else expr]
                                           ) )
 
+
+
+(define (get-len-arr expr)
+    (nanopass-case (L9 Expr) expr
+        [(array ,c ,t [,e* ...]) c]
+        [else expr]))
+
+(define (get-type-arr expr)
+    (nanopass-case (L9 Expr) expr
+        [(array ,c ,t [,[e*] ...]) t]
+        [else expr]))
+
+(define (join-str lst)
+    (foldr (lambda (x y) (string-append x "," y )) "" lst) )
+
+(define (all-but-last l) (list->string (reverse (cdr (reverse (string->list l))))))

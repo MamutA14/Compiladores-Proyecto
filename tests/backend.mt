@@ -5,3 +5,5 @@
 (assigment (middle-passes (front-passes (parse-LF '(for [x (list (quot 1))] (begin (define y (quot 1))) )      ))))
 (list-to-array (assigment (middle-passes (front-passes (parse-LF '(for [x (list (quot 1))] (begin (define y (quot 1)) (define x (quot 2))) )      )))))
 
+
+ (c (list-to-array (assigment (middle-passes (front-passes (parse-LF '(list (quot 1) (quot 2) )      ))))))
