@@ -8,4 +8,4 @@
 (list-to-array ’( list #\a #\b #\c 'd))
 ;;Para c 
 (c (parse-L9 '(if (const Bool #t) (primapp + (const Int 2) (const Int 2)) (primapp - (const Int 2) (const Int 2)))))
-(c (parse-L9 (parse-L8 (assigment (parse-L7 '(let x  (primapp + x (const Int 4))) ))))) 
+(c (parse-L9  '(let x  (primapp + x (const Int 4)) )))    
